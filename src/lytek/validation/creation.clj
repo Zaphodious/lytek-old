@@ -3,7 +3,8 @@
             [clojure.spec :as s]
             [clojure.spec.gen :as gen]
             [lytek.validation.creation-imp :refer :all]
-            [com.rpl.specter :refer :all]))
+            [com.rpl.specter :refer :all]
+            [lytek.macros :as lymac]))
 
 
 
@@ -73,3 +74,9 @@
       {:charm-points-remaining points-remaining
        :bonus-points-spent     bonus-points-used}
       individual-errors)))
+
+(defn get-static-character-tags [character chron]
+  (->> (keys character)
+       (map #(get-static-tags-in % character chron))
+       (reduce into [])
+       (reduce into [])))

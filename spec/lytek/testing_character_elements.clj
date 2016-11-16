@@ -32,7 +32,15 @@
                             :prereq         [:and [:melee 3] [:brawl 3]]}
     "repurchasable"        {:name           "multiple prereqs"
                             :possible-ranks #{1 2 3 4 5}
-                            :repurchasable  true}}})
+                            :repurchasable  true}
+    "adds sample tag"      {:name           "adds sample tag"
+                            :possible-ranks #{1 2 3 4 5}
+                            :repurchasable  true
+                            :static-tags    [[:blorp]       ;; For a given rank, adds the tags at index rank-1
+                                             [:blorp]
+                                             [:blorp]
+                                             [:blorp]
+                                             [:blorp]]}}})
 
 
 (defn make-bulk-charms [base-name attribute att-req ess-req number-charms]
@@ -61,7 +69,11 @@
                                    :prereq-charms #{}}
            "needs-one-prereq"     {:name          "needs-one-prereq"
                                    :prereq-stats  [:athletics 1 1]
-                                   :prereq-charms #{"simple charm"}}}
+                                   :prereq-charms #{"simple charm"}}
+           "gives a tag"          {:name         "gives a tag"
+                                   :prereq-stats [:athletics 1 1]
+                                   :static-tags  [:kafwunka]
+                                   }}
           (make-bulk-charms "athleto-bulk" :athletics 1 1 20)
           (make-bulk-charms "performo-bulk" :performance 1 1 20))})
 

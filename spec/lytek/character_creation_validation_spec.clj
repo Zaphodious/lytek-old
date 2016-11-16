@@ -361,4 +361,13 @@
                                                [["needs-one-prereq" "nothing to note"] ["simple charm" "nothing to note"]])}
                          (into testelm/merit-chron testelm/charm-chron)))))
 
-
+(describe "The Tagging Subsystem"
+          (it (str "checks merits, charms, etc, and identifies possible tags")
+              (should= [:blorp :blorp :kafwunka]
+                       (lycreate/get-static-character-tags
+                         {:chartype :solar
+                          :caste    :dawn
+                          :merits   [["adds sample tag" 1] ["adds sample tag" 2]]
+                          :charms   [["gives a tag" "nothing to note"]]
+                          }
+                         (into testelm/merit-chron testelm/charm-chron)))))

@@ -2,7 +2,9 @@
   (:require [lytek.character :as lychar]
             [lytek.col :as lycol]
             [clojure.spec :as s]
-            [clojure.spec.gen :as gen]))
+            [clojure.spec.gen :as gen]
+            [lytek.macros :as lymac]
+            [com.rpl.specter :refer :all]))
 
 ;;;;;;;;;;
 ;;; Attribute Section
@@ -277,4 +279,24 @@
 (defn filter-charms-by-refactored [{:keys [caste-abilities favored-abilities charms] :as character} chron-charms]
   (lycol/filter-with-not #(is-selected-ability-charm? character chron-charms %)
                          charms))
+
+(defn map-over-coll-of-properties
+  [props-list path-to-prop-name path-to-records-in-chron tag-getter chron]
+  (transform [ALL]
+             (fn [property]
+               (let [[thing-name] (select path-to-prop-name property)
+                     [thing-record] (select [path-to-records-in-chron (keypath thing-name)] chron)]
+                 (tag-getter property thing-record)))
+             props-list))
+
+(lymac/defmulti-using-map
+  get-static-tags-in "Gets the tags from the player, using the provided key"
+  [keyword character chron] keyword
+  {:default []
+   :charms  (map-over-coll-of-properties (:charms character) [FIRST] [:charms]
+                                         (fn [_ thing-record] (:static-tags thing-record))
+                                         chron)
+   :merits  (map-over-coll-of-properties (:merits character) [FIRST] [:merits]
+                                         (fn [property thing-record]
+                                           (lymac/try-nil (nth (:static-tags thing-record) (last property)))) chron)})
 
