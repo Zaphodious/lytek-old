@@ -2,7 +2,8 @@
   (:require [lytek.character.elements :as lyelm]
             [lytek.chron.merit :as lycmerit]
             [lytek.chron.elements :as lycelem]
-            [lytek.chron.charm :as lyccharm]))
+            [lytek.chron.charm :as lyccharm]
+            [lytek.col :as lycol]))
 
 (def ability-rank-blocks
   {:all-nothing (zipmap lyelm/abilities (repeat 0))
@@ -17,30 +18,54 @@
 
 (def merit-chron
   {:merits
-   {"single rank"          {:name           "single rank"
-                            :possible-ranks #{2}}
-    "multiple ranks"       {:name           "multiple ranks"
-                            :possible-ranks #{1 2 4}}
-    "prereq athletics 3"   {:name           "prereq athletics 3"
-                            :possible-ranks #{1 2 3 4 5}
-                            :prereq         [:or [:athletics 3]]}
-    "multiple or prereqs"  {:name           "multiple or prereqs"
-                            :possible-ranks #{1 2 3 4 5}
-                            :prereq         [:or [:melee 3] [:brawl 3]]}
-    "multiple and prereqs" {:name           "multiple  and prereqs"
-                            :possible-ranks #{1 2 3 4 5}
-                            :prereq         [:and [:melee 3] [:brawl 3]]}
-    "repurchasable"        {:name           "multiple prereqs"
-                            :possible-ranks #{1 2 3 4 5}
-                            :repurchasable  true}
-    "adds sample tag"      {:name           "adds sample tag"
-                            :possible-ranks #{1 2 3 4 5}
-                            :repurchasable  true
-                            :static-tags    [[:blorp]       ;; For a given rank, adds the tags at index rank-1
-                                             [:blorp]
-                                             [:blorp]
-                                             [:blorp]
-                                             [:blorp]]}}})
+   (lycol/namemap
+     [{:name           "single rank"
+       :possible-ranks #{2}}
+      {:name           "multiple ranks"
+       :possible-ranks #{1 2 4}}
+      {:name           "prereq athletics 3"
+       :possible-ranks #{1 2 3 4 5}
+       :prereq         [:or [:athletics 3]]}
+      {:name           "multiple or prereqs"
+       :possible-ranks #{1 2 3 4 5}
+       :prereq         [:or [:melee 3] [:brawl 3]]}
+      {:name           "multiple and prereqs"
+       :possible-ranks #{1 2 3 4 5}
+       :prereq         [:and [:melee 3] [:brawl 3]]}
+      {:name           "repurchasable"
+       :possible-ranks #{1 2 3 4 5}
+       :repurchasable  true}
+      {:name           "adds sample tag"
+       :possible-ranks #{1 2 3 4 5}
+       :repurchasable  true
+       :static-tags    [[:blorp]                            ;; For a given rank, adds the tags at index rank-1
+                        [:blorp]
+                        [:blorp]
+                        [:blorp]
+                        [:blorp]]}
+      {:name           "adds tag from rank"
+       :possible-ranks #{1 2 3 4 5}
+       :repurchasable  true
+       :static-tags    [[:primero]                          ;; For a given rank, adds the tags at index rank-1
+                        [:segundo]
+                        [:terciro]
+                        [:fourth-y]
+                        [:full-circle]]}
+      {:name           "adds martial arts tag"
+       :possible-ranks #{5}
+       :static-tags    [[] [] [] []
+                        [:martial-artist]]}
+      {:name           "artifact tag giver"
+       :possible-ranks #{2 3 4 5}
+       :static-tags    [[]
+                        [:artifact-2]
+                        [:artifact-3]
+                        [:artifact-4]
+                        [:artifact-5]]}
+      {:name           "hearthstone tag giver"
+       :possible-ranks #{2 4}
+       :static-tags    [[] [:hearthstone-2] [] [:hearthstone-4] []]}
+      ])})
 
 
 (defn make-bulk-charms [base-name attribute att-req ess-req number-charms]
@@ -58,22 +83,37 @@
 
 (def charm-chron
   {:charms
-   (merge {"simple charm"         {:name          "simple charm"
-                                   :prereq-stats  [:athletics 1 1]
-                                   :prereq-charms #{}}
-           "higher-ability charm" {:name          "higher-ability charm"
-                                   :prereq-stats  [:athletics 3 1]
-                                   :prereq-charms #{}}
-           "higher-essence charm" {:name          "higher-essence charm"
-                                   :prereq-stats  [:athletics 1 3]
-                                   :prereq-charms #{}}
-           "needs-one-prereq"     {:name          "needs-one-prereq"
-                                   :prereq-stats  [:athletics 1 1]
-                                   :prereq-charms #{"simple charm"}}
-           "gives a tag"          {:name         "gives a tag"
-                                   :prereq-stats [:athletics 1 1]
-                                   :static-tags  [:kafwunka]
-                                   }}
+   (merge (lycol/namemap
+            [{:name          "simple charm"
+              :prereq-stats  [:athletics 1 1]
+              :prereq-charms #{}}
+             {:name          "higher-ability charm"
+              :prereq-stats  [:athletics 3 1]
+              :prereq-charms #{}}
+             {:name          "higher-essence charm"
+              :prereq-stats  [:athletics 1 3]
+              :prereq-charms #{}}
+             {:name          "needs-one-prereq"
+              :prereq-stats  [:athletics 1 1]
+              :prereq-charms #{"simple charm"}}
+             {:name         "gives a tag"
+              :prereq-stats [:athletics 1 1]
+              :static-tags  [:kafwunka]}
+             {:name         "hobo style starter"
+              :prereq-stats [:martial-arts 1 1]
+              :style        "hobo style"}
+             {:name         "awesome craft charm"
+              :prereq-stats [:craft 3 1]}])
           (make-bulk-charms "athleto-bulk" :athletics 1 1 20)
           (make-bulk-charms "performo-bulk" :performance 1 1 20))})
 
+(def panoply-chron
+  {:panoply
+   (lycol/namemap
+     [{:name "great and mighty sword"
+       :type :artifact-3}
+      {:name "totally rad shield"
+       :type :artifact-4}
+      {:name "gem of morbidity"
+       :type :hearthstone-2}])
+   })

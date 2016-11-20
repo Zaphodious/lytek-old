@@ -113,29 +113,49 @@
 
 (defn what-bonus-vs-ability [number] {:ability-points (min 3 number) :bonus-points (max 0 (- number 3))})
 
-(def max-ability-points 28)
+(defn max-ability-points [char-type] 28)
 
 (defn bonus-point-cost-for-ability [ability selected-abilities]
   (if (contains? selected-abilities ability) 1 2))
 
-(defn points-vs-bonus-post-split [new-val remaining-points ability selected-abilities]
-  (let [points-affordable-diff (min new-val (- remaining-points new-val))
-        bonus-points-used (max 0 (* -1 points-affordable-diff))
-        points-actually-affordable (min new-val (+ new-val points-affordable-diff))]
-    ;(println "ability " ability " new rank " new-val " bonus " bonus-points-used)
-    [(min new-val (+ new-val points-actually-affordable)) bonus-points-used]))
+(defn split-at-max [numbah maxi]
+  [(min numbah maxi) (max 0 (- maxi numbah))])
 
-(defn rd-on-split-ability-list [selected-abilities]
+(defn rd-on-split-ability-list [selected-abilities chartype]
   (fn [[running-points running-bonus] ability {:keys [ability-points bonus-points]}]
-    (let [[points bonus] (points-vs-bonus-post-split ability-points
-                                                     (- max-ability-points running-points)
-                                                     ability
-                                                     selected-abilities)]
+    (let [max-points (max-ability-points chartype)
+          [actual-running moar-bonus] (split-at-max max-points (+ ability-points running-points))
+          bon-cost (bonus-point-cost-for-ability ability selected-abilities)]
+      ;(println ability ability-points "actual-running" actual-running "bonus" bonus-points moar-bonus "x" bon-cost)
       ;(println "ability " ability " for points " points " and bonus " bonus-points " with selected " selected-abilities)
-      [(+ running-points points) (+ running-bonus
-                                    (* (bonus-point-cost-for-ability ability selected-abilities)
-                                       (+ bonus bonus-points)))])))
+      [(+ actual-running)
+       (+ running-bonus (* bon-cost (+ bonus-points moar-bonus)))])))
 
+(comment (defn rd-on-split-ability-list [selected-abilities chartype]
+           (fn [[running-points running-bonus] ability {:keys [ability-points bonus-points]}
+                (let [points])])))
+
+(defn split-ability-ranks [rank-map]
+  (if (not (empty? rank-map))
+    (transform [ALL] (fn [[k v]] [k (what-bonus-vs-ability v)]) rank-map)
+    {"hi" {:ability-points 0 :bonus-points 0}}))
+
+(defn +nullable [& args]
+  (apply + (filterv #(or % 0) args)))
+
+(defn uncrack-alt-abilities [ability alt-ability-map regular-ability-map]
+  (let [alt-split (split-ability-ranks alt-ability-map)
+        abs (reduce +nullable (select [ALL LAST :bonus-points] alt-split))
+        aps (reduce +nullable (select [ALL LAST :ability-points] alt-split))
+        new-combo-ability-map (transform [(keypath ability)]
+                                         (fn [{:keys [:bonus-points :ability-points] :as thing}]
+                                           {:bonus-points (+ (or bonus-points 0) abs) :ability-points (+ (or ability-points 0) aps)})
+                                         regular-ability-map)]
+    ;(println (:brawl new-combo-ability-map))
+    new-combo-ability-map))
+
+(defn add-craft-to-ability-map [abmap]
+  (assoc abmap :craft 0))
 ;;;;;;;;;;
 ;;; Merit Section
 ;;;;;;;;;;
@@ -210,10 +230,14 @@
     errors-so-far
     (into errors-so-far [[chname :supernal]])))
 
-(defn charm-check-ability-req-met [errors-so-far {:keys [:supernal :ability-ranks] :as character}
+(defn charm-check-ability-req-met [errors-so-far {:keys [:supernal :ability-ranks :crafts] :as character}
                                    charm-slot
-                                   {[ability-req ability-val-req] :prereq-stats chname :name}]
-  (if (lychar/passes-prereq character ability-req ability-val-req)
+                                   {[ability-req ability-val-req] :prereq-stats chname :name :as charm}]
+  (if (or (case ability-req
+            :craft (-> (setval [(keypath :ability-ranks) (keypath :craft)] (reduce max (select [ALL LAST] crafts)) character)
+                       (lychar/passes-prereq ability-req ability-val-req))
+            :martial-arts (lychar/passes-prereq character (:style charm) ability-val-req)
+            (lychar/passes-prereq character ability-req ability-val-req)))
     errors-so-far
     (into errors-so-far [[(first charm-slot) :prereq-stats]])))
 
@@ -298,5 +322,5 @@
                                          chron)
    :merits  (map-over-coll-of-properties (:merits character) [FIRST] [:merits]
                                          (fn [property thing-record]
-                                           (lymac/try-nil (nth (:static-tags thing-record) (last property)))) chron)})
+                                           (lymac/try-nil (nth (:static-tags thing-record) (- (last property) 1)))) chron)})
 

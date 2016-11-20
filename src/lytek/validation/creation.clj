@@ -6,10 +6,14 @@
             [com.rpl.specter :refer :all]
             [lytek.macros :as lymac]))
 
-
+(defn get-static-character-tags [character chron]
+  (->> (keys character)
+       (map #(get-static-tags-in % character chron))
+       (reduce into [])
+       (reduce into [])))
 
 (defn validate-attributes
-  [character]
+  [character chron]
   (let [att-points-remaining (into {} (remaining-attribute-points character))
         cleaned-up-att-points-remaining (into {}
                                               (map (fn [[k v]] [k (max 0 v)])
@@ -20,7 +24,7 @@
      :attribute-points-remaining cleaned-up-att-points-remaining}))
 
 
-(defn validate-exalt-spcific [{:keys [:favored-abilities :caste-abiliites :supernal] :as character}]
+(defn validate-exalt-spcific [{:keys [:favored-abilities :caste-abiliites :supernal] :as character} chron]
   (let [invalid-caste-abs (determine-invalid-caste-abs character)
         invalid-favored-abs (determine-invalid-favored-abs character)
         has-caste-ab-errors (not (empty? invalid-caste-abs))
@@ -37,15 +41,22 @@
          (when supernal-is-in-error [supernal :supernal])]))))
 
 
-(defn validate-abilities
-  [{:keys [:ability-ranks :chartype :caste :favored-abilities :caste-abiliites]
-    :as   character}]
-  (let [split-ranks (into {} (map (fn [[k v]] [k (what-bonus-vs-ability v)]) ability-ranks))
-        [points bonus] (reduce-kv (rd-on-split-ability-list (into favored-abilities caste-abiliites))
-                                  [0 0]
-                                  split-ranks)]
-    {:bonus-points-spent (+ bonus), :ability-points-remaining (- max-ability-points points)}))
 
+(defn validate-abilities [{:keys [:ability-ranks :chartype :caste :favored-abilities :caste-abiliites :martial-arts :crafts]
+                           :as   character}
+                          chron]
+  (let [ability-errors (if (not (empty? martial-arts))
+                         (if (not (contains? (into #{} (get-static-character-tags character chron)) :martial-artist))
+                           [:static-tags :martial-artist]))
+        split-ranks (->> ability-ranks
+                         (split-ability-ranks)
+                         (uncrack-alt-abilities :brawl martial-arts)
+                         (uncrack-alt-abilities :craft crafts))
+        selected-abilities (into favored-abilities caste-abiliites)
+        [points bonus] (reduce-kv (rd-on-split-ability-list selected-abilities chartype) [0 0] split-ranks)]
+    (if ability-errors ability-errors
+                       {:bonus-points-spent (+ bonus), :ability-points-remaining (- (max-ability-points chartype) points)}))
+  )
 
 (defn validate-merits [{:keys [:merits :ability-ranks :chartype :caste] :as character}
                        {chron-merits :merits :as chron}]
@@ -75,8 +86,20 @@
        :bonus-points-spent     bonus-points-used}
       individual-errors)))
 
-(defn get-static-character-tags [character chron]
-  (->> (keys character)
-       (map #(get-static-tags-in % character chron))
-       (reduce into [])
-       (reduce into [])))
+(defn validate-panoply [{:keys [:charms :chartype :caste :caste-abiliites :favored-abilities :panoply] :as character}
+                        {chron-merits :merits chron-charms :charms chron-panoply :panoply :as chron}]
+  (let [artifact-tags [:artifact-2 :artifact-3 :artifact-4 :artifact-5 :hearthstone-2 :hearthstone-4]
+        replaced-inventory (transform [ALL (if-path [:type :artifact] [STAY])]
+                                      (fn [{:keys [name]}] (get chron-panoply name)) panoply)
+        count-inv-of-type (fn [the-type] {the-type (count (select [ALL (if-path [:type #{the-type}] [STAY])] replaced-inventory))})
+        count-tags-of-type (fn [the-type] {the-type (count (select [ALL #{the-type}] (get-static-character-tags character chron)))})
+        types-in-inventory (into {} (map count-inv-of-type artifact-tags))
+        tags-in-character (into {} (map count-tags-of-type artifact-tags))
+        remaining-things (into {} (map (fn [[k1 a] [k2 b]] [k2 (- b a)]) types-in-inventory tags-in-character))
+        things-errors (reduce-kv (fn [error-vec k v]
+                                   (if (> 0 v) (conj error-vec [:static-tags k])
+                                               error-vec)) []
+                                 remaining-things)]
+    (if (empty? things-errors) {:remaining remaining-things}
+                               things-errors)))
+

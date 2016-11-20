@@ -32,3 +32,6 @@
 
 (defn first-index [pred coll]
   (first (indices pred coll)))
+
+(defn nil-if-empty [coll]
+  (if (empty? coll) nil coll))
