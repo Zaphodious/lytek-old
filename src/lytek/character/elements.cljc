@@ -12,10 +12,15 @@
 
 (s/def ::attribute-ranks (s/map-of ::attribute (s/int-in 1 6) :count (count attributes)
                                    :gen #(gen/fmap
-                                          (fn [numbas] (zipmap attributes numbas))
-                                          (s/gen (s/every (s/int-in 1 6) :count (count attributes))))))
+                                           (fn [numbas] (zipmap attributes numbas))
+                                           (s/gen (s/every (s/int-in 1 6) :count (count attributes))))))
 (s/def ::ability-ranks (s/map-of ::ability (s/int-in 1 6) :count (count abilities)
                                  :gen #(gen/fmap
-                                        (fn [numbas] (zipmap abilities numbas))
-                                        (s/gen (s/every (s/int-in 0 6) :count (count abilities))))))
+                                         (fn [numbas] (zipmap abilities numbas))
+                                         (s/gen (s/every (s/int-in 0 6) :count (count abilities))))))
 
+(def character-fields-with-combinor-fn
+  {:chartype          (fn [orig diff] (:chartype diff))
+   :caste             (fn [orig diff] (:caste diff))
+   :favored-abilities (fn [orig diff] (into (:favored-abilities orig) (:favored-abilities diff)))
+   })                                                       ; TO-DO: Finish writing diff fns

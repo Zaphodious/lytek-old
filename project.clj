@@ -1,6 +1,6 @@
-(defproject lytek "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+(defproject lytek "0.8.1-SNAPSHOT"
+  :description "A library for the creation and validation of Exalted 3rd Edition Characters"
+  :url "https://github.com/Zaphodious/lytek"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0-alpha13"]

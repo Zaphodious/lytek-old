@@ -100,6 +100,14 @@
                                    (if (> 0 v) (conj error-vec [:static-tags k])
                                                error-vec)) []
                                  remaining-things)]
-    (if (empty? things-errors) {:remaining remaining-things}
+    (if (empty? things-errors) {:remaining-artifacts remaining-things}
                                things-errors)))
 
+(def validate-solar (juxt
+                      validate-abilities
+                      validate-attributes
+                      validate-charms
+                      validate-exalt-spcific
+                      validate-merits
+                      validate-panoply
+                      ))

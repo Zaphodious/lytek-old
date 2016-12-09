@@ -21,43 +21,37 @@
    :ability-ranks     (zipmap lytek.character.elements/abilities (repeat 0))
    :merits            []
    :charms            []
-   :martial-arts      []})
+   :martial-arts      []
+   :panoply           []})
 
 (lymac/defrecord-with-default
   full-character
   "A character post character-creation. Contains a nascient-character with base information,
-  and fields containing the differences since creation. "
-  {:chartype          :solar
-   :caste             :dawn
-   :favored-abilities #{}
-   :caste-abiliites   #{}
-   :attribute-ranks   (zipmap lytek.character.elements/attributes (repeat 1))
-   :ability-ranks     (zipmap lytek.character.elements/abilities (repeat 0))
-   :merits            []
-   :charms            []
-   :martial-arts      []})
+  and fields containing the differences since creation."
+  {:initial-character default-nascient-character
+   :diff-character    default-nascient-character})
 
 (defn into-map [thing] (into {} thing))
 (lymac/defmulti-using-map get-number-from-area
-                          "Gets a value from the provided character
-                          under the provided keyword."
-                          [character area-to-search what-to-find]
-                          area-to-search
-                          {:stuff        :and-fluff
-                           :merits       (-> character
-                                             (:merits)
-                                             (lycol/namemap)
-                                             (get what-to-find)
-                                             (:rank))
-                           :martial-arts (-> character
-                                             (:martial-arts)
-                                             (into-map)
-                                             (get what-to-find))
-                           :crafts       (-> character
-                                             (:crafts)
-                                             (into-map)
-                                             (get what-to-find))
-                           :default      (-> character area-to-search what-to-find)})
+  "Gets a value from the provided character
+  under the provided keyword."
+  [character area-to-search what-to-find]
+  area-to-search
+  {:stuff        :and-fluff
+   :merits       (-> character
+                     (:merits)
+                     (lycol/namemap)
+                     (get what-to-find)
+                     (:rank))
+   :martial-arts (-> character
+                     (:martial-arts)
+                     (into-map)
+                     (get what-to-find))
+   :crafts       (-> character
+                     (:crafts)
+                     (into-map)
+                     (get what-to-find))
+   :default      (-> character area-to-search what-to-find)})
 
 (defn keyword-from-string
   [label]

@@ -495,14 +495,14 @@
 
 (describe "Inventory Validation"
           (it "knows that no tags and no artifacts is fine"
-              (should= {:remaining no-remaining-artifacts}
+              (should= {:remaining-artifacts no-remaining-artifacts}
                        (lycreate/validate-panoply
                          {:chartype :solar
                           :caste    :dawn
                           :panoply  []}
                          (into testelm/charm-chron testelm/merit-chron))))
           (it "knows that a character can have up to tags' worth of artifacts"
-              (should= {:remaining (into no-remaining-artifacts {:artifact-4 1})}
+              (should= {:remaining-artifacts (into no-remaining-artifacts {:artifact-4 1})}
                        (lycreate/validate-panoply
                          {:chartype :solar
                           :caste    :dawn
