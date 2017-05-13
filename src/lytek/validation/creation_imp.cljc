@@ -1,8 +1,6 @@
 (ns lytek.validation.creation-imp
   (:require [lytek.character :as lychar]
             [lytek.col :as lycol]
-            [clojure.spec :as s]
-            [clojure.spec.gen :as gen]
             [lytek.macros :as lymac]
             [com.rpl.specter :refer :all]))
 
@@ -90,16 +88,16 @@
 (defn valid-solar-caste-ability? [ability caste]
   (contains? (caste solar-caste-abilities) ability))
 
-(defn determine-invalid-caste-abs [{:keys [:caste-abiliites :caste]}]
+(defn determine-invalid-caste-abs [{:keys [caste-abilities :caste]}]
   (reduce (fn [bad-abs ability]
             (if (valid-solar-caste-ability? ability caste)
               bad-abs
               (into bad-abs [ability])))
           []
-          caste-abiliites))
-(defn determine-invalid-favored-abs [{:keys [:favored-abilities :caste-abiliites]}]
+          caste-abilities))
+(defn determine-invalid-favored-abs [{:keys [:favored-abilities caste-abilities]}]
   (reduce (fn [bad-abs ability]
-            (if (contains? caste-abiliites ability)
+            (if (contains? caste-abilities ability)
               (into bad-abs [ability])
               bad-abs))
           []

@@ -1,11 +1,13 @@
-(defproject lytek "0.8.1-SNAPSHOT"
-  :description "A library for the creation and validation of Exalted 3rd Edition Characters"
-  :url "https://github.com/Zaphodious/lytek"
+(defproject lytek "0.1.0-SNAPSHOT"
+  :description "FIXME: write description"
+  :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.9.0-alpha13"]
+  :main lytek.core
+  :dependencies [[org.clojure/clojure "1.9.0-alpha16"]
                  [org.clojure/test.check "0.9.0"]
-                 [com.rpl/specter "0.13.1"]]
-  :profiles {:dev {:dependencies [[speclj "3.3.1"]]}}
-  :plugins [[speclj "3.3.1"]]
+                 [com.rpl/specter "0.13.1"]
+                 [draconic.ui "0.2.2-SNAPSHOT"]]
+  :profiles {:dev {:dependencies [[speclj "3.3.2"]]}}
+  :plugins [[speclj "3.3.2"]]
   :test-paths ["spec"])

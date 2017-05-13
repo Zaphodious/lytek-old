@@ -1,6 +1,6 @@
 (ns lytek.character.elements
-  (:require [clojure.spec :as s]
-            [clojure.spec.gen :as gen]))
+  (:require [clojure.spec.alpha :as s]
+            [clojure.spec.gen.alpha :as gen]))
 
 (def attributes #{:strength :dexterity :stamina :appearance :charisma :manipulation :wits :intelligence :perception})
 (def abilities #{:archery :athletics :awareness :brawl :bureaucracy :dodge :integrity :investigation :larceny

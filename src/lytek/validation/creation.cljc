@@ -1,9 +1,7 @@
 (ns lytek.validation.creation
   (:require [lytek.col :as lc]
-            [clojure.spec :as s]
-            [clojure.spec.gen :as gen]
             [lytek.validation.creation-imp :refer :all]
-            [com.rpl.specter :refer :all]
+            [com.rpl.specter :as sp :refer :all]
             [lytek.macros :as lymac]))
 
 (defn get-static-character-tags [character chron]
@@ -21,28 +19,34 @@
         bonus-points-spent (bonus-points-spent-on-attributes character)
         ]
     {:bonus-points-spent         bonus-points-spent
-     :attribute-points-remaining cleaned-up-att-points-remaining}))
+     :attribute-points-remaining cleaned-up-att-points-remaining
+     :export-ready               (= 0 (reduce-kv (fn [v k r] (+ v r)) 0 cleaned-up-att-points-remaining))}))
 
 
-(defn validate-exalt-spcific [{:keys [:favored-abilities :caste-abiliites :supernal] :as character} chron]
+(defn validate-exalt-spcific [{:keys [:favored-abilities caste-abilities :supernal] :as character} chron]
   (let [invalid-caste-abs (determine-invalid-caste-abs character)
         invalid-favored-abs (determine-invalid-favored-abs character)
         has-caste-ab-errors (not (empty? invalid-caste-abs))
         has-favored-ab-errors (not (empty? invalid-favored-abs))
-        supernal-in-selected-caste-abs (contains? caste-abiliites supernal)
+        supernal-in-selected-caste-abs (contains? caste-abilities supernal)
         supernal-is-in-error (and (not supernal-in-selected-caste-abs) (not (nil? supernal)))]
     (if-not (or has-caste-ab-errors has-favored-ab-errors supernal-is-in-error)
-      {:caste-abilities-remaining   (- 5 (count caste-abiliites))
-       :favored-abilities-remaining (- 5 (count favored-abilities))
-       :supernal-needs-selecting?   (nil? supernal)}
+      (let [car (- 5 (count caste-abilities))
+            far (- 5 (count favored-abilities))
+            sns (nil? supernal)]
+        {:caste-abilities-remaining   car
+         :favored-abilities-remaining far
+         :supernal-needs-selecting?   sns
+         :export-ready                (and (= 0 (+ car far))
+                                           (not sns))})
       (lc/scrub-nulls-from-vector
-        [(when has-caste-ab-errors [invalid-caste-abs :caste-abiliites])
+        [(when has-caste-ab-errors [invalid-caste-abs :caste-abilities])
          (when has-favored-ab-errors [invalid-favored-abs :favored-abilities])
          (when supernal-is-in-error [supernal :supernal])]))))
 
 
 
-(defn validate-abilities [{:keys [:ability-ranks :chartype :caste :favored-abilities :caste-abiliites :martial-arts :crafts]
+(defn validate-abilities [{:keys [:ability-ranks :chartype :caste :favored-abilities caste-abilities :martial-arts :crafts]
                            :as   character}
                           chron]
   (let [ability-errors (if (not (empty? martial-arts))
@@ -52,10 +56,11 @@
                          (split-ability-ranks)
                          (uncrack-alt-abilities :brawl martial-arts)
                          (uncrack-alt-abilities :craft crafts))
-        selected-abilities (into favored-abilities caste-abiliites)
+        selected-abilities (into favored-abilities caste-abilities)
         [points bonus] (reduce-kv (rd-on-split-ability-list selected-abilities chartype) [0 0] split-ranks)]
     (if ability-errors ability-errors
-                       {:bonus-points-spent (+ bonus), :ability-points-remaining (- (max-ability-points chartype) points)}))
+                       (let [points-remaining (- (max-ability-points chartype) points)]
+                         {:bonus-points-spent (+ bonus), :ability-points-remaining points-remaining, :export-ready (= points-remaining 0)})))
   )
 
 (defn validate-merits [{:keys [:merits :ability-ranks :chartype :caste] :as character}
@@ -63,13 +68,16 @@
   (let [merit-point-total (->> merits
                                (map #(second %))
                                (reduce +))
+        mpr (max 0 (- (merit-points-allowed chartype) merit-point-total))
+        bps (max 0 (- merit-point-total (merit-points-allowed chartype)))
         errors (determine-merit-errors character chron-merits)]
-    (if (empty? errors) {:merit-points-remaining (max 0 (- (merit-points-allowed chartype) merit-point-total))
-                         :bonus-points-spent     (max 0 (- merit-point-total (merit-points-allowed chartype)))}
+    (if (empty? errors) {:merit-points-remaining mpr
+                         :bonus-points-spent     bps
+                         :export-ready           (= 0 mpr)}
                         errors)))
 
 
-(defn validate-charms [{:keys [:charms :chartype :caste :caste-abiliites :favored-abilities] :as character}
+(defn validate-charms [{:keys [:charms :chartype :caste caste-abilities :favored-abilities] :as character}
                        {chron-merits :merits chron-charms :charms :as chron}]
   (let [individual-errors (reduce (get-error-for-charm chron-charms character) [] charms)
         selected-charms-names (names-of-selected-charms character chron-charms)
@@ -83,10 +91,11 @@
                             0)]
     (if (empty? individual-errors)
       {:charm-points-remaining points-remaining
-       :bonus-points-spent     bonus-points-used}
+       :bonus-points-spent     bonus-points-used
+       :export-ready           (= 0 points-remaining)}
       individual-errors)))
 
-(defn validate-panoply [{:keys [:charms :chartype :caste :caste-abiliites :favored-abilities :panoply] :as character}
+(defn validate-panoply [{:keys [:charms :chartype :caste caste-abilities :favored-abilities :panoply] :as character}
                         {chron-merits :merits chron-charms :charms chron-panoply :panoply :as chron}]
   (let [artifact-tags [:artifact-2 :artifact-3 :artifact-4 :artifact-5 :hearthstone-2 :hearthstone-4]
         replaced-inventory (transform [ALL (if-path [:type :artifact] [STAY])]
@@ -100,14 +109,41 @@
                                    (if (> 0 v) (conj error-vec [:static-tags k])
                                                error-vec)) []
                                  remaining-things)]
-    (if (empty? things-errors) {:remaining-artifacts remaining-things}
+    (if (empty? things-errors) {:remaining-artifacts remaining-things,
+                                :export-ready        (= 0
+                                                        (reduce-kv (fn [v k r] (+ v r)) 0 remaining-things))}
                                things-errors)))
 
-(def validate-solar (juxt
-                      validate-abilities
-                      validate-attributes
-                      validate-charms
-                      validate-exalt-spcific
-                      validate-merits
-                      validate-panoply
-                      ))
+(defn apply-solar-validators
+  "Applies validation functions for Solar Exalts, returning a map of :area to {validation result}"
+  [character chron] (sp/transform
+                      [ALL sp/LAST]
+                      (fn [t] (t character chron))
+                      {:abilities     validate-abilities
+                       :attributes    validate-attributes
+                       :charms        validate-charms
+                       :exalt-spcific validate-exalt-spcific
+                       :merits        validate-merits
+                       :panoply       validate-panoply
+                       }))
+
+(defn can-be-exported?
+  ([the-char the-chron] (can-be-exported? the-char the-chron apply-solar-validators))
+  ([the-char the-chron validator]
+   (let [validation-results (validator the-char the-chron)
+         bonus-points (reduce +
+                              (select
+                                [ALL
+                                 LAST
+                                 (sp/keypath :bonus-points-spent)
+                                 (sp/pred number?)]
+                                validation-results))
+         categories-not-ready (->> (filter #(not (:export-ready (last %))) validation-results)
+                                   (select [ALL FIRST]))
+         total-errors (into categories-not-ready
+                            (if (= bonus-points 15)
+                              []
+                              [:bonus-points-spent]))
+         ready? (empty? total-errors)]
+     {:export-ready ready? :not-ready total-errors :bonus-points-spent bonus-points :full-result validation-results}
+     )))
