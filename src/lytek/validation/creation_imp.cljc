@@ -231,10 +231,11 @@
 (defn charm-check-ability-req-met [errors-so-far {:keys [:supernal :ability-ranks :crafts] :as character}
                                    charm-slot
                                    {[ability-req ability-val-req] :prereq-stats chname :name :as charm}]
-  (if (or (case ability-req
-            :craft (-> (setval [(keypath :ability-ranks) (keypath :craft)] (reduce max (select [ALL LAST] crafts)) character)
+  (if (or
+        (case ability-req
+          (:craft "craft" "Craft" ":craft" "CRAFT") (-> (setval [(keypath :ability-ranks) (keypath :craft)] (reduce max (select [ALL LAST] crafts)) character)
                        (lychar/passes-prereq ability-req ability-val-req))
-            :martial-arts (lychar/passes-prereq character (:style charm) ability-val-req)
+          (:martial-arts "martial arts" "martial-arts" "Martial Arts" "Martial-Arts" "Martial arts" "Martial-arts" "martial Arts" "martial-Arts" "MARTIAL ARTS" "MARTIAL-ARTS") (lychar/passes-prereq character (:style charm) ability-val-req)
             (lychar/passes-prereq character ability-req ability-val-req)))
     errors-so-far
     (into errors-so-far [[(first charm-slot) :prereq-stats]])))

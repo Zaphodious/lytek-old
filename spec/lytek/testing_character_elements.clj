@@ -25,13 +25,13 @@
        :possible-ranks #{1 2 4}}
       {:name           "prereq athletics 3"
        :possible-ranks #{1 2 3 4 5}
-       :prereq         [:or [:athletics 3]]}
+       :prereq         [:or ["Athletics" 3]]}
       {:name           "multiple or prereqs"
        :possible-ranks #{1 2 3 4 5}
-       :prereq         [:or [:melee 3] [:brawl 3]]}
+       :prereq         [:or ["Melee" 3] ["brawl" 3]]}
       {:name           "multiple and prereqs"
        :possible-ranks #{1 2 3 4 5}
-       :prereq         [:and [:melee 3] [:brawl 3]]}
+       :prereq         [:and ["Melee" 3] [:brawl 3]]}
       {:name           "repurchasable"
        :possible-ranks #{1 2 3 4 5}
        :repurchasable  true}
@@ -88,7 +88,7 @@
               :prereq-stats  [:athletics 1 1]
               :prereq-charms #{}}
              {:name          "higher-ability charm"
-              :prereq-stats  [:athletics 3 1]
+              :prereq-stats  ["athletics" 3 1]
               :prereq-charms #{}}
              {:name          "higher-essence charm"
               :prereq-stats  [:athletics 1 3]
@@ -103,7 +103,7 @@
               :prereq-stats [:martial-arts 1 1]
               :style        "hobo style"}
              {:name         "awesome craft charm"
-              :prereq-stats [:craft 3 1]}])
+              :prereq-stats ["craft"  3 1]}])
           (make-bulk-charms "athleto-bulk" :athletics 1 1 20)
           (make-bulk-charms "performo-bulk" :performance 1 1 20))})
 
